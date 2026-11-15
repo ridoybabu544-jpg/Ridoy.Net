@@ -1,12 +1,18 @@
-# padavan
+# Ridoy.Net Firmware (Padavan-based)
 
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 [![build](https://github.com/OpenPadavan/padavan/actions/workflows/build.yml/badge.svg)](https://github.com/OpenPadavan/padavan/actions/workflows/build.yml)
 
-Custom firmware for Ralink/MediaTek-based routers. Built on top of the original **Padavan** firmware by **Andy Padavan**, this project aims to improve the supported devices on the software side, giving power users full control over their hardware.
+Customized Ridoy.Net firmware based on OpenPadavan/Padavan for supported Ralink/MediaTek routers. Built on top of the original **Padavan** firmware by **Andy Padavan**, this project aims to improve the supported devices on the software side, giving power users full control over their hardware.
 
 > **Warning:** This project comes without warranty or support. Installing it will probably void your warranty.
 > Contributors are not responsible for what happens next. **Flash at your own risk!**
+
+## Ridoy.Net customization
+
+This fork includes a TP-Link TL-WR845N V4 board profile (`TPLINK/MT7628`, product ID `TL_WR845N-V4`). The V4 board descriptor identifies the device as **Ridoy.Net** while retaining the existing GPIO, reset/WPS, antenna, and hardware capability definitions. The V4 build template disables the optional IPSet package to reduce image size; core routing, wireless, DHCP, and firewall components are not intentionally removed.
+
+**Important:** a successful compile and a firmware image that fits the router's exact flash partition are still required before installation. Do not flash an image solely because it builds. Confirm the exact hardware revision, flash size/partition map, recovery method, and image format first. No router flashing is performed by this repository workflow.
 
 ## Maintainer
 
