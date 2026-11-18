@@ -19,6 +19,16 @@ body.body_iframe{
     width: 150px;
     height: 71px;
     margin-top: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #006dcc;
+    white-space: nowrap;
+}
+#logo::after {
+    content: "Ridoy.Net";
 }
 #logo:hover {
     cursor: pointer;
