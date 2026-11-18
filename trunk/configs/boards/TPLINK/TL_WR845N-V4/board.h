@@ -1,8 +1,8 @@
 /* TP-LINK TL-WR845N V4 */
 
 #define BOARD_PID               "TL_WR845N-V4"
-#define BOARD_NAME              "TL_WR845N-V4"
-#define BOARD_DESC              "TP-Link TL-W845N Wireless Router"
+#define BOARD_NAME              "Ridoy.Net"
+#define BOARD_DESC              "Ridoy.Net - TP-Link TL-WR845N V4 Wireless Router"
 #define BOARD_VENDOR_NAME       "TP-LINK Technologies CO., LTD."
 #define BOARD_VENDOR_URL        "http://www.tp-link.com/en"
 #define BOARD_MODEL_URL         "http://www.tp-link.com/en/download/TL-WR845N_V4.html"

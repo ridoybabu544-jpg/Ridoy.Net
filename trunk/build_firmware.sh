@@ -134,7 +134,7 @@ cp -fL "$busybox_cf" "$busybox_tf"
 cp -fL "$board_mk" "$ROOTDIR/user/shared/board.mk"
 cp -fL "$board_h" "$ROOTDIR/user/shared/include/ralink_board.h"
 sed "s/BOARD_PID.*$/BOARD_PID\t\t\"${CONFIG_FIRMWARE_PRODUCT_ID}\"/g" -i "$ROOTDIR/user/shared/include/ralink_board.h"
-sed "s/BOARD_NAME.*$/BOARD_NAME\t\t\"${CONFIG_FIRMWARE_PRODUCT_ID}\"/g" -i "$ROOTDIR/user/shared/include/ralink_board.h"
+# Preserve the board-specific BOARD_NAME from configs/boards/.../board.h (Ridoy.Net branding).
 cp -fL "$partitions_cf" "$partitions_tcf"
 ############################# WI-FI ###################################
 dir_wifi_src="$ROOTDIR/proprietary/rt_wifi"
