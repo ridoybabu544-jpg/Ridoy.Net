@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <time.h>
 
 #include "rc.h"
 
@@ -776,6 +777,9 @@ get_sshd_bfp_time(int bfp_mode)
 }
 
 #if defined(SUPPORT_RIDOY_PORTAL)
+#define RIDOY_PORTAL_ACCESS_SECONDS       2592000UL
+#define RIDOY_PORTAL_IPSET_MAX_TIMEOUT    2147483UL
+
 static void
 ridoy_portal_write_accounting_rules(FILE *fp)
 {
@@ -788,12 +792,65 @@ ridoy_portal_write_accounting_rules(FILE *fp)
 
 	while (fgets(line, sizeof(line), clients)) {
 		name[0] = mac[0] = ip[0] = 0;
-		if (sscanf(line, "%48[^\t]\t%17[^\t]\t%15[^\t]", name, mac, ip) == 3 &&
+		if (sscanf(line, "%48[^\\t]\\t%17[^\\t]\\t%15[^\\t]", name, mac, ip) == 3 &&
 		    is_valid_ipv4(ip)) {
-			fprintf(fp, "-A RIDoyNetAcct -s %s -j RETURN\n", ip);
-			fprintf(fp, "-A RIDoyNetAcct -d %s -j RETURN\n", ip);
+			fprintf(fp, "-A RIDoyNetAcct -s %s -j RETURN\\n", ip);
+			fprintf(fp, "-A RIDoyNetAcct -d %s -j RETURN\\n", ip);
 		}
 	}
+	fclose(clients);
+}
+
+/*
+ * Linux ipset timeouts are limited to 2,147,483 seconds. Re-add approved
+ * entries with the remaining part of their absolute 30-day access window.
+ * The watchdog calls this every 60 seconds, so the set never expires early
+ * and the final timeout ends at the original approval time + 30 days.
+ */
+void
+ridoy_portal_maintain_access(void)
+{
+	FILE *clients;
+	char line[192], name[49], mac[18], ip[16], command[224];
+	unsigned long stamp, elapsed, remaining, timeout;
+	time_t now;
+
+	if (!nvram_match("ridoy_portal_runtime", "1"))
+		return;
+
+	clients = fopen("/tmp/ridoy_portal_clients.log", "r");
+	if (!clients)
+		return;
+
+	now = time(NULL);
+	if (now <= 0) {
+		fclose(clients);
+		return;
+	}
+
+	while (fgets(line, sizeof(line), clients)) {
+		name[0] = mac[0] = ip[0] = 0;
+		stamp = 0;
+		if (sscanf(line, "%48[^\\t]\\t%17[^\\t]\\t%15[^\\t]\\t%lu",
+			   name, mac, ip, &stamp) != 4 ||
+		    !is_valid_ipv4(ip) || stamp == 0)
+			continue;
+
+		elapsed = (now > (time_t)stamp) ?
+			(unsigned long)(now - (time_t)stamp) : 0;
+		if (elapsed >= RIDOY_PORTAL_ACCESS_SECONDS)
+			continue;
+
+		remaining = RIDOY_PORTAL_ACCESS_SECONDS - elapsed;
+		timeout = (remaining > RIDOY_PORTAL_IPSET_MAX_TIMEOUT) ?
+			RIDOY_PORTAL_IPSET_MAX_TIMEOUT : remaining;
+
+		snprintf(command, sizeof(command),
+			 "/sbin/ipset add ridoy_portal_allow %s timeout %lu -exist",
+			 ip, timeout);
+		system(command);
+	}
+
 	fclose(clients);
 }
 #endif
@@ -1860,7 +1917,7 @@ ipt_nat_rules(char *man_if, char *man_ip,
 	if (is_module_loaded("ip_set") &&
 	    is_module_loaded("ip_set_hash_ip") &&
 	    is_module_loaded("xt_set") &&
-	    system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
+	    system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2147483") == 0)
 		is_ridoy_portal = 1;
 	else
 		is_ridoy_portal = 0;
