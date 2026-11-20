@@ -792,10 +792,10 @@ ridoy_portal_write_accounting_rules(FILE *fp)
 
 	while (fgets(line, sizeof(line), clients)) {
 		name[0] = mac[0] = ip[0] = 0;
-		if (sscanf(line, "%48[^\\t]\\t%17[^\\t]\\t%15[^\\t]", name, mac, ip) == 3 &&
+		if (sscanf(line, "%48[^\t]\t%17[^\t]\t%15[^\t]", name, mac, ip) == 3 &&
 		    is_valid_ipv4(ip)) {
-			fprintf(fp, "-A RIDoyNetAcct -s %s -j RETURN\\n", ip);
-			fprintf(fp, "-A RIDoyNetAcct -d %s -j RETURN\\n", ip);
+			fprintf(fp, "-A RIDoyNetAcct -s %s -j RETURN\n", ip);
+			fprintf(fp, "-A RIDoyNetAcct -d %s -j RETURN\n", ip);
 		}
 	}
 	fclose(clients);
@@ -831,7 +831,7 @@ ridoy_portal_maintain_access(void)
 	while (fgets(line, sizeof(line), clients)) {
 		name[0] = mac[0] = ip[0] = 0;
 		stamp = 0;
-		if (sscanf(line, "%48[^\\t]\\t%17[^\\t]\\t%15[^\\t]\\t%lu",
+		if (sscanf(line, "%48[^\t]\t%17[^\t]\t%15[^\t]\t%lu",
 			   name, mac, ip, &stamp) != 4 ||
 		    !is_valid_ipv4(ip) || stamp == 0)
 			continue;
