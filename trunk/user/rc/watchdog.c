@@ -1158,8 +1158,8 @@ watchdog_on_timer(void)
 	storage_save_time(10);
 
 #if defined(SUPPORT_RIDOY_PORTAL)
-	/* WD_NORMAL_PERIOD is 10 seconds; refresh IPSet timeouts once per minute. */
-	if (++ridoy_portal_timer >= 6) {
+	/* WD_NORMAL_PERIOD is 10 seconds; refresh IPSet timeouts every 5 minutes. */
+	if (++ridoy_portal_timer >= 30) {
 		ridoy_portal_timer = 0;
 		ridoy_portal_maintain_access();
 	}
