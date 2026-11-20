@@ -4047,49 +4047,40 @@ ridoy_valid_mac(const char *mac)
 	return 1;
 }
 
-/* The submitted MAC must match the router's ARP entry for the
- * actual source IP. Never trust a MAC or IP supplied by the form alone. */
+/* Verify that the submitted MAC matches the live ARP entry for
+ * the actual source IP before allowing the device. */
 static int
-ridoy_client_mac_status(const char *client_ip, const char *submitted_mac)
+ridoy_client_mac_matches(const char *client_ip, const char *submitted_mac)
 {
 	FILE *fp;
 	char line[256], arp_ip[64], arp_mac[32];
-	int found = 0;
 
 	if (!client_ip || !submitted_mac)
 		return 0;
 
 	fp = fopen("/proc/net/arp", "r");
 	if (!fp)
-		return -1;
+		return 0;
 
 	if (!fgets(line, sizeof(line), fp)) {
 		fclose(fp);
-		return -1;
+		return 0;
 	}
 
 	while (fgets(line, sizeof(line), fp)) {
 		arp_ip[0] = 0;
 		arp_mac[0] = 0;
 		if (sscanf(line, "%63s %*s %*s %31s", arp_ip, arp_mac) == 2 &&
-		    strcmp(arp_ip, client_ip) == 0) {
-			found = 1;
-			if (strlen(arp_mac) == 17 &&
-			    strcasecmp(arp_mac, submitted_mac) == 0) {
-				fclose(fp);
-				return 1;
-			}
+		    strcmp(arp_ip, client_ip) == 0 &&
+		    strlen(arp_mac) == 17 &&
+		    strcasecmp(arp_mac, submitted_mac) == 0) {
+			fclose(fp);
+			return 1;
 		}
 	}
 
 	fclose(fp);
-	return found ? 0 : -1;
-}
-
-static int
-ridoy_client_mac_matches(const char *client_ip, const char *submitted_mac)
-{
-	return ridoy_client_mac_status(client_ip, submitted_mac) == 1;
+	return 0;
 }
 
 static int
@@ -4353,22 +4344,11 @@ ridoy_portal_admin_action(const char *action, const char *ip, FILE *stream)
 			ridoy_portal_admin_result(stream, 0, "This request is no longer pending.");
 			return;
 		}
-		/* The MAC was verified against the live client when the request was
-		 * submitted. ARP entries can expire while the owner opens this page,
-		 * so an absent entry is not itself a reason to reject approval.
-		 * Reject a conflicting ARP entry and discard requests older than 10 min. */
-		{
-			time_t now = time(NULL);
-			int mac_status = ridoy_client_mac_status(record.ip, record.mac);
-			if (record.stamp == 0 || now < (time_t)record.stamp ||
-			    now - (time_t)record.stamp > 600) {
-				ridoy_portal_admin_result(stream, 0, "This request expired. Ask the device to reconnect and request access again.");
-				return;
-			}
-			if (mac_status == 0) {
-				ridoy_portal_admin_result(stream, 0, "A different MAC address is now using this IP. Ask the device to reconnect and request access again.");
-				return;
-			}
+		/* Keep the original Build #48 approval validation: the pending
+		 * device must still match the router's current ARP IP/MAC mapping. */
+		if (!ridoy_client_mac_matches(record.ip, record.mac)) {
+			ridoy_portal_admin_result(stream, 0, "Device is no longer on this IP/MAC. Ask it to reconnect and request access again.");
+			return;
 		}
 		snprintf(command, sizeof(command),
 			 "/sbin/ipset add ridoy_portal_allow %s timeout 2592000 -exist", record.ip);
