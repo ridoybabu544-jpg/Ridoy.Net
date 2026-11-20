@@ -24,10 +24,18 @@ if [ ! -x "$depmod_bin" ]; then
 fi
 
 if [ "$CONFIG_FIRMWARE_INCLUDE_IPSET" = "y" ]; then
-	ipset_dir="${ROOTDIR}/user/ipset/ipset-7.11/kernel/net/netfilter"
+	ipset_dir="${ROOTDIR}/user/ipset/ipset-7.24/kernel/net/netfilter"
+	# The package builds its own kernel modules; install those exact modules
+	# rather than leaving the older in-tree ipset implementation in place.
+	for module in "$ipset_dir/xt_set.ko" "$ipset_dir/ipset/ip_set.ko" "$ipset_dir/ipset/ip_set_hash_ip.ko"; do
+		if [ ! -s "$module" ]; then
+			echo "Required ipset kernel module is missing: $module"
+			exit 1
+		fi
+	done
 	mkdir -p "${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/kernel/net/netfilter/ipset"
-	cp -f "$ipset_dir/xt_set.ko" "${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/kernel/net/netfilter"
-	cp -f "$ipset_dir/ipset/"*.ko "${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/kernel/net/netfilter/ipset"
+	cp -f "$ipset_dir/xt_set.ko" "${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/kernel/net/netfilter/"
+	cp -f "$ipset_dir/ipset/"*.ko "${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/kernel/net/netfilter/ipset/"
 fi
 
 # call depmod
