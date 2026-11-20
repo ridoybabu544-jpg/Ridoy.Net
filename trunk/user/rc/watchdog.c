@@ -1107,6 +1107,9 @@ static void
 watchdog_on_timer(void)
 {
 	int is_ap_mode;
+#if defined(SUPPORT_RIDOY_PORTAL)
+	static int ridoy_portal_timer = 0;
+#endif
 
 	/* if timer is set to less than 1 sec, then check buttons only */
 	if (wd_itv.it_value.tv_sec == 0) {
@@ -1153,6 +1156,14 @@ watchdog_on_timer(void)
 	setkernel_tz();
 
 	storage_save_time(10);
+
+#if defined(SUPPORT_RIDOY_PORTAL)
+	/* WD_NORMAL_PERIOD is 10 seconds; refresh IPSet timeouts once per minute. */
+	if (++ridoy_portal_timer >= 6) {
+		ridoy_portal_timer = 0;
+		ridoy_portal_maintain_access();
+	}
+#endif
 }
 
 static void
