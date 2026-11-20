@@ -1913,6 +1913,8 @@ ipt_nat_rules(char *man_if, char *man_ip,
 	 * core IP set module first, then the hash type and iptables matcher. */
 	module_smart_load("ip_set", NULL);
 	module_smart_load("ip_set_hash_ip", NULL);
+	module_smart_load("ip_set", NULL);
+	module_smart_load("ip_set_hash_ip", NULL);
 	module_smart_load("xt_set", NULL);
 	if (is_module_loaded("ip_set") &&
 	    is_module_loaded("ip_set_hash_ip") &&
