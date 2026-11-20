@@ -825,29 +825,13 @@ ipt_filter_rules(char *man_if, char *wan_if, char *lan_if, char *lan_ip,
 
 	ret = 0;
 #if defined(SUPPORT_RIDOY_PORTAL)
-	/* Initialize the portal before generating IPv4 filter rules. The NAT
-	 * rules are generated later, so initializing it there is too late: the
-	 * FORWARD chain would otherwise be built without the portal rules. */
 #if defined(SUPPORT_HTTPS)
 	i_http_proto = nvram_get_int("http_proto");
 #else
 	i_http_proto = 0;
 #endif
-	/* The captive portal uses its own HTTP landing page and must be
-	 * initialized even when the router's administration UI is HTTPS-only.
-	 * Otherwise the admin endpoint reports "portal is not active" before
-	 * the portal can serve any client requests. */
-	/* ip_set_hash_ip depends on the core ip_set module. Load the core
-	 * explicitly first; module_smart_load does not guarantee dependency
-	 * resolution on this firmware. */
-	module_smart_load("ip_set", NULL);
-	module_smart_load("ip_set_hash_ip", NULL);
-	module_smart_load("xt_set", NULL);
-	if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
-		is_ridoy_portal = 1;
-	else
-		is_ridoy_portal = 0;
-	nvram_set_int_temp("ridoy_portal_runtime", is_ridoy_portal);
+	/* Portal runtime is initialized once in ipt_nat_rules(), which runs
+	 * before IPv4 and IPv6 filter rules are generated. */
 	ip2class(lan_ip, nvram_safe_get("lan_netmask"), lan_net, sizeof(lan_net));
 #endif
 	i_bfplimit_ref = 0;
@@ -1868,16 +1852,15 @@ ipt_nat_rules(char *man_if, char *man_ip,
 #else
 	i_http_proto = 0;
 #endif
-	/* Ridoy.Net access control is enabled by default on this build.
-	 * Do not couple portal activation to the admin UI HTTP/HTTPS setting:
-	 * the captive landing page is served independently by the router. */
-	/* ip_set_hash_ip depends on the core ip_set module. Load the core
-	 * explicitly first; module_smart_load does not guarantee dependency
-	 * resolution on this firmware. */
+	/* The NAT builder runs before the IPv4/IPv6 filter builders. Load the
+	 * core IP set module first, then the hash type and iptables matcher. */
 	module_smart_load("ip_set", NULL);
 	module_smart_load("ip_set_hash_ip", NULL);
 	module_smart_load("xt_set", NULL);
-	if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
+	if (is_module_loaded("ip_set") &&
+	    is_module_loaded("ip_set_hash_ip") &&
+	    is_module_loaded("xt_set") &&
+	    system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
 		is_ridoy_portal = 1;
 	else
 		is_ridoy_portal = 0;
