@@ -37,6 +37,11 @@ env:
 permissions:
   contents: read
 
+concurrency:
+  group: ridoynet-firmware-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   validate:
     name: Validate board configs
