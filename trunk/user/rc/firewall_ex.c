@@ -837,6 +837,10 @@ ipt_filter_rules(char *man_if, char *wan_if, char *lan_if, char *lan_ip,
 	 * initialized even when the router's administration UI is HTTPS-only.
 	 * Otherwise the admin endpoint reports "portal is not active" before
 	 * the portal can serve any client requests. */
+	/* ip_set_hash_ip depends on the core ip_set module. Load the core
+	 * explicitly first; module_smart_load does not guarantee dependency
+	 * resolution on this firmware. */
+	module_smart_load("ip_set", NULL);
 	module_smart_load("ip_set_hash_ip", NULL);
 	module_smart_load("xt_set", NULL);
 	if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
@@ -1867,6 +1871,10 @@ ipt_nat_rules(char *man_if, char *man_ip,
 	/* Ridoy.Net access control is enabled by default on this build.
 	 * Do not couple portal activation to the admin UI HTTP/HTTPS setting:
 	 * the captive landing page is served independently by the router. */
+	/* ip_set_hash_ip depends on the core ip_set module. Load the core
+	 * explicitly first; module_smart_load does not guarantee dependency
+	 * resolution on this firmware. */
+	module_smart_load("ip_set", NULL);
 	module_smart_load("ip_set_hash_ip", NULL);
 	module_smart_load("xt_set", NULL);
 	if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
