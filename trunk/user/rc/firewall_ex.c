@@ -833,12 +833,16 @@ ipt_filter_rules(char *man_if, char *wan_if, char *lan_if, char *lan_ip,
 #else
 	i_http_proto = 0;
 #endif
-	if (i_http_proto == 0 || i_http_proto == 2) {
-		module_smart_load("ip_set_hash_ip", NULL);
-		module_smart_load("xt_set", NULL);
-		if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
-			is_ridoy_portal = 1;
-	}
+	/* The captive portal uses its own HTTP landing page and must be
+	 * initialized even when the router's administration UI is HTTPS-only.
+	 * Otherwise the admin endpoint reports "portal is not active" before
+	 * the portal can serve any client requests. */
+	module_smart_load("ip_set_hash_ip", NULL);
+	module_smart_load("xt_set", NULL);
+	if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
+		is_ridoy_portal = 1;
+	else
+		is_ridoy_portal = 0;
 	nvram_set_int_temp("ridoy_portal_runtime", is_ridoy_portal);
 	ip2class(lan_ip, nvram_safe_get("lan_netmask"), lan_net, sizeof(lan_net));
 #endif
@@ -1860,14 +1864,15 @@ ipt_nat_rules(char *man_if, char *man_ip,
 #else
 	i_http_proto = 0;
 #endif
-	/* Ridoy.Net access control is enabled by default on this build. */
-	if (i_http_proto == 0 || i_http_proto == 2) {
-		/* Load the IP-set kernel modules before creating the allowlist and rules that use -m set. */
-		module_smart_load("ip_set_hash_ip", NULL);
-		module_smart_load("xt_set", NULL);
-		if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
-			is_ridoy_portal = 1;
-	}
+	/* Ridoy.Net access control is enabled by default on this build.
+	 * Do not couple portal activation to the admin UI HTTP/HTTPS setting:
+	 * the captive landing page is served independently by the router. */
+	module_smart_load("ip_set_hash_ip", NULL);
+	module_smart_load("xt_set", NULL);
+	if (system("/sbin/ipset -exist create ridoy_portal_allow hash:ip family inet timeout 2592000") == 0)
+		is_ridoy_portal = 1;
+	else
+		is_ridoy_portal = 0;
 	nvram_set_int_temp("ridoy_portal_runtime", is_ridoy_portal);
 #endif
 
