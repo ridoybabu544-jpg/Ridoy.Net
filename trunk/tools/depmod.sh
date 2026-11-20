@@ -42,6 +42,25 @@ fi
 #sudo $depmod_bin -ae -F System.map -b "${INSTALL_MOD_PATH}" -r ${KERNELRELEASE}
 ${FAKEROOT} $depmod_bin -ae -F System.map -b "${INSTALL_MOD_PATH}" -r ${KERNELRELEASE}
 
+# Keep text modules.dep for the firmware modprobe applet, and verify that
+# the portal modules and their dependency metadata were installed.
+if [ "$CONFIG_FIRMWARE_INCLUDE_IPSET" = "y" ]; then
+	modules_dep="${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/modules.dep"
+	if [ ! -s "$modules_dep" ]; then
+		echo "Kernel module dependency file is missing: $modules_dep"
+		exit 1
+	fi
+	for module_path in \
+		"kernel/net/netfilter/ipset/ip_set.ko" \
+		"kernel/net/netfilter/ipset/ip_set_hash_ip.ko" \
+		"kernel/net/netfilter/xt_set.ko"; do
+		if ! grep -Fq "$module_path:" "$modules_dep"; then
+			echo "Kernel module dependency entry is missing: $module_path"
+			exit 1
+		fi
+	done
+fi
+
 # clear unneeded depmod files
 rm -f "${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/modules.alias"
 rm -f "${INSTALL_MOD_PATH}/lib/modules/${KERNELRELEASE}/modules.alias.bin"
