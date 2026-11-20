@@ -700,6 +700,7 @@ void ipt_filter_default(void);
 void fill_static_routes(char *buf, int len, const char *ift);
 void ip2class(const char *addr, const char *mask, char *out_buf, size_t out_len);
 void start_firewall_ex(void);
+void ridoy_portal_maintain_access(void);
 
 /* ralink.c */
 int get_wired_mac_is_single(void);
