@@ -109,7 +109,9 @@ function get_system_info(){
 		type: 'get',
 		url: '/system_status_data.asp',
 		dataType: 'script',
-		cache: true,
+		/* System metrics must never be served from the browser cache. */
+		cache: false,
+		timeout: 8000,
 		error: function(xhr) {
 			id_system_info = setTimeout('get_system_info()', 2000);
 		},
